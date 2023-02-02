@@ -20,7 +20,7 @@ def redirectPage():
     session['refresh_token'] = session['token']['refresh_token']
     return session['token']
 
-
+# builds playlist featuring recommendations based on artist + danceability provided (0-1)
 @app.route('/getPlaylist/<artistId>/<danceability>/<name>')
 def buildNewPlaylist(artistId, danceability, name):
     if session.get('token') is None:
@@ -37,7 +37,8 @@ def printToken():
     session['token'] = refreshToken(session['token'], session['refresh_token'])
     return session['token']['access_token']
 
-
+# builds playlist featuring a random track from all releases (albums/singles) organised in 
+# chronological order
 @app.route('/artistPlaylist/<artistId>')
 def buildArtistPlaylist(artistId):
     if session.get('token') is None:
