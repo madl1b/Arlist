@@ -14,6 +14,6 @@ The getPlaylist and artistPlaylist endpoints need an artist id. Here's how to ge
 
 What is danceability? 
 
-Number [0,1] that indicates the energy and **danceability** of a track.
+Number [0,1] that indicates the energy and (wait for it) **danceability** of a track.
 
 
