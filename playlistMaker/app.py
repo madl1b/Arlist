@@ -3,8 +3,8 @@ from arlist import userAuthorise, buildAccessToken, refreshToken, getTracks, bui
 
 app = Flask(__name__)
 
-app.secret_key = "123400:dasd"
-app.config['SESSION_COOKIE_NAME'] = 'cookie'
+app.secret_key = ""
+app.config['SESSION_COOKIE_NAME'] = ""
 
 
 @app.route("/")
