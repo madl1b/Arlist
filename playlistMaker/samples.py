@@ -13,7 +13,7 @@ def buildSamplesDatabase():
             instrumenality integer, 
             acousticness integer, 
             speechiness integer, 
-            danceability integer 
+            danceability integer, 
             album REFERENCES albums(id)
         )
     """
