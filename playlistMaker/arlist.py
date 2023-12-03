@@ -4,10 +4,12 @@ import base64
 import time
 import random
 import operator
+import sqlite3 as sl
 
 # Client Keys
-clientID = "YOUR CLIENT ID"
-clientSecret = "YOUR CLIENT SECRET"
+# ADD YOUR OWN
+clientID = ""
+clientSecret = ""
 
 #Spotify URLS
 spotifyAuthURL = "https://accounts.spotify.com/authorize"
@@ -105,6 +107,7 @@ def makeTokenRequest(params):
     }
     response = requests.post(spotifyTokenURL, data=params, headers=header)
     tokenData = response.json()
+    # tokenData['expire_time'] = time.time() + tokenData['expires_in']
     tokenData['expire_time'] = time.time() + tokenData['expires_in']
     return tokenData
 
@@ -120,13 +123,11 @@ def buildPlaylistArtist(artistId, token):
     }
     response = requests.get(f"https://api.spotify.com/v1/artists/{artistId}/albums", params=args, headers=header(token))
     albumData = response.json()
-
     # get album ids then sort by oldest first
     albums = [{'id': album['id'], 'date': album['release_date']} for album in albumData['items']]
     albums.sort(key=operator.itemgetter('date'))
 
     # get a random track from each album, random offset based on total size
-
     trackIds = []
     for x in albums:
         response = requests.get(f"https://api.spotify.com/v1/albums/{x['id']}/tracks",
@@ -136,7 +137,6 @@ def buildPlaylistArtist(artistId, token):
             },
             headers=header(token)
         )
-
         albumInfo = response.json()
         size = albumInfo['total']
         response = requests.get(f"https://api.spotify.com/v1/albums/{x['id']}/tracks",
@@ -148,12 +148,56 @@ def buildPlaylistArtist(artistId, token):
             headers=header(token)
         )
         albumNarrowed = response.json()
-
         trackIds.append(albumNarrowed['items'][0]['uri'])
 
     return buildPlaylist(trackIds, token, name + " Arlist")
 
+def addEntries(features, trackData):
+    conn = sl.connect('samples.db')
+    c = conn.cursor()
+
+    for feature in features:
+        c.execute("""
+        INSERT INTO samples (id, album, name, instrumentality, acousticness, danceability, album_id)
+        VALUES (?, 'an album :D', ?, ?, ?, ?, ?)        
+        """, (feature['id'], trackData[feature['id']][0], feature['instrumentalness'], feature['acousticness'], 
+              feature['danceability'], trackData[feature['id']][1]))
+
+    c.execute("SELECT * FROM samples")
+    rows = c.fetchall()
+    conn.close()
+    return rows
 
 
+def searchSampleSong(years, genre, token):
+    searchURL = "https://api.spotify.com/v1/search"
+    # hipster tag only available for albums
+    args = {
+        'q': f"year={years} tag:hipster",
+        'type': "album",
+    }
+    albums = requests.get(f"https://api.spotify.com/v1/search", params=args, headers=header(token)).json()
 
-    
+    # get album ids, add to query.
+
+    albumNames = [album['id'] for album in albums['albums']['items']]
+    allFeatures = []
+    for name in albumNames:
+
+        args2 = {
+            'q': f"name={name} genre={genre}",
+            'type': "track",
+        }
+        tracks = requests.get(f"https://api.spotify.com/v1/search", params=args2, headers=header(token)).json()
+
+        track_dict = {track['id']: [track['name'], name] for track in tracks['tracks']['items']}
+        trackIds = list(track_dict.keys())
+        f_args = {
+            'ids': ','.join(trackIds)
+        }
+        features = requests.get(f"https://api.spotify.com/v1/audio-features", params=f_args, headers=header(token)).json()
+        allFeatures += features['audio_features']
+        addEntries(features['audio_features'], track_dict)
+
+
+    return allFeatures
